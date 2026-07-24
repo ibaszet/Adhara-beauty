@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adhara Admin — Réservations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#FAF6EF;
+    --ivory-deep:#F1E9DB;
+    --espresso:#2B2018;
+    --espresso-soft:#5A4A3E;
+    --sky:#9CC6DE;
+    --sky-deep:#4C7C9C;
+    --sky-pale:#DCEBF2;
+    --gold:#C4993F;
+    --gold-soft:#E6D3A3;
+    --copper:#B0663C;
+    --white:#FFFFFF;
+    --line:rgba(43,32,24,.12);
+    --green:#4C7C56;
+    --red:#B4443B;
+    --amber:#C4993F;
+    --gray:#8A7C6E;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:var(--ivory-deep);color:var(--espresso);font-family:'Jost',sans-serif;font-weight:300;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Playfair Display',serif;font-weight:600;}
+  a{color:inherit;}
+  button{font-family:'Jost',sans-serif;}
+
+  /* ---------- LOGIN ---------- */
+  #loginScreen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,var(--espresso) 0%,#3a2c22 100%);
+    padding:20px;
+  }
+  .login-card{
+    background:var(--ivory);border-radius:6px;padding:50px 40px;width:100%;max-width:380px;
+    box-shadow:0 40px 80px -30px rgba(0,0,0,.5);text-align:center;
+  }
+  .login-card .mark{font-family:'Playfair Display',serif;font-style:italic;font-size:1.9rem;color:var(--espresso);}
+  .login-card .sub{font-size:.68rem;letter-spacing:.32em;text-transform:uppercase;color:var(--sky-deep);margin:6px 0 34px;}
+  .login-card input{
+    width:100%;padding:15px 16px;border:1px solid var(--line);border-radius:3px;margin-bottom:16px;
+    font-size:.95rem;font-family:'Jost',sans-serif;background:var(--white);
+  }
+  .login-card input:focus{outline:none;border-color:var(--sky-deep);}
+  .login-card button{
+    width:100%;padding:15px;background:var(--espresso);color:var(--ivory);border:none;border-radius:3px;
+    font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;cursor:pointer;transition:background .3s ease;
+  }
+  .login-card button:hover{background:var(--sky-deep);}
+  .login-error{color:var(--red);font-size:.8rem;margin-top:14px;display:none;}
+  .shake{animation:shake .45s;}
+  @keyframes shake{
+    10%,90%{transform:translateX(-2px);}
+    20%,80%{transform:translateX(4px);}
+    30%,50%,70%{transform:translateX(-8px);}
+    40%,60%{transform:translateX(8px);}
+  }
+
+  /* ---------- APP SHELL ---------- */
+  #app{display:none;min-height:100vh;}
+  header.topbar{
+    background:var(--espresso);color:var(--ivory);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:50;
+  }
+  .topbar .mark{font-family:'Playfair Display',serif;font-style:italic;font-size:1.3rem;}
+  .topbar .mark span{display:block;font-family:'Jost',sans-serif;font-style:normal;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-soft);margin-top:2px;}
+  .logout-btn{
+    background:transparent;border:1px solid rgba(250,246,239,.35);color:var(--ivory);padding:9px 18px;border-radius:3px;
+    font-size:.76rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:.3s;
+  }
+  .logout-btn:hover{background:rgba(250,246,239,.12);}
+
+  nav.tabs{
+    display:flex;background:var(--white);border-bottom:1px solid var(--line);padding:0 20px;position:sticky;top:64px;z-index:40;
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    background:none;border:none;padding:18px 20px;font-size:.82rem;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--espresso-soft);cursor:pointer;position:relative;white-space:nowrap;font-weight:500;
+  }
+  nav.tabs button.active{color:var(--espresso);}
+  nav.tabs button.active::after{
+    content:'';position:absolute;left:20px;right:20px;bottom:0;height:2px;background:var(--gold);
+  }
+  nav.tabs button .count{
+    display:inline-block;background:var(--sky-pale);color:var(--sky-deep);font-size:.68rem;padding:1px 7px;border-radius:10px;margin-left:6px;
+  }
+
+  main{max-width:1100px;margin:0 auto;padding:34px 20px 80px;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:14px;}
+  .panel-head h2{font-size:1.4rem;font-style:italic;}
+
+  .dash-cols{display:grid;grid-template-columns:1fr 1fr;gap:26px;}
+  .dash-col h3{
+    font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--espresso-soft);margin-bottom:16px;
+    display:flex;align-items:center;gap:8px;font-family:'Jost',sans-serif;font-weight:600;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;}
+  .dot.new{background:var(--amber);}
+  .dot.confirmed{background:var(--sky-deep);}
+  @media (max-width:800px){.dash-cols{grid-template-columns:1fr;}}
+
+  /* ---------- BOOKING CARD ---------- */
+  .card{
+    background:var(--white);border:1px solid var(--line);border-radius:5px;padding:20px 22px;margin-bottom:14px;
+    transition:box-shadow .3s ease;
+  }
+  .card:hover{box-shadow:0 14px 34px -20px rgba(43,32,24,.3);}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;}
+  .card-name{font-family:'Playfair Display',serif;font-style:italic;font-size:1.15rem;}
+  .card-service{font-size:.82rem;color:var(--espresso-soft);margin-top:3px;}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;}
+  .badge{font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:20px;font-weight:600;}
+  .badge.new{background:#FBEEDA;color:#95701F;}
+  .badge.confirmed{background:var(--sky-pale);color:var(--sky-deep);}
+  .badge.done{background:#E4EEE5;color:var(--green);}
+  .badge.cancelled{background:#F6E4E2;color:var(--red);}
+  .badge.web{background:var(--ivory-deep);color:var(--espresso-soft);}
+  .badge.manual{background:#EDE6F5;color:#6B4F96;}
+
+  .card-meta{display:flex;flex-wrap:wrap;gap:18px;margin:14px 0 10px;font-size:.85rem;color:var(--espresso-soft);}
+  .card-meta span{display:flex;align-items:center;gap:7px;}
+  .card-meta svg{width:15px;height:15px;color:var(--gold);flex-shrink:0;}
+  .card-meta a{color:var(--copper);font-weight:500;}
+  .card-note{
+    background:var(--ivory-deep);padding:10px 14px;border-radius:3px;font-size:.83rem;color:var(--espresso-soft);margin-top:10px;
+  }
+  .card-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  .act{
+    border:none;padding:9px 15px;border-radius:3px;font-size:.75rem;letter-spacing:.03em;text-transform:uppercase;
+    cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:.25s;
+  }
+  .act svg{width:13px;height:13px;}
+  .act-confirm{background:var(--sky-pale);color:var(--sky-deep);}
+  .act-confirm:hover{background:var(--sky-deep);color:var(--white);}
+  .act-done{background:#E4EEE5;color:var(--green);}
+  .act-done:hover{background:var(--green);color:var(--white);}
+  .act-cancel{background:#F6E4E2;color:var(--red);}
+  .act-cancel:hover{background:var(--red);color:var(--white);}
+  .act-call{background:var(--ivory-deep);color:var(--espresso);}
+  .act-call:hover{background:var(--espresso);color:var(--ivory);}
+  .act-wa{background:#DFF3E3;color:#2E7D45;}
+  .act-wa:hover{background:#2E7D45;color:var(--white);}
+  .act-delete{background:transparent;color:var(--red);border:1px solid var(--red);}
+  .act-delete:hover{background:var(--red);color:var(--white);}
+
+  .empty-state{
+    text-align:center;padding:60px 20px;color:var(--espresso-soft);
+  }
+  .empty-state svg{width:44px;height:44px;color:var(--sky-deep);margin-bottom:16px;}
+  .empty-state p{font-size:.92rem;}
+
+  /* ---------- Toutes tab ---------- */
+  .filter-row{display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap;}
+  .filter-row input, .filter-row select{
+    padding:12px 14px;border:1px solid var(--line);border-radius:3px;background:var(--white);font-size:.88rem;font-family:'Jost',sans-serif;
+  }
+  .filter-row input{flex:1;min-width:200px;}
+  .filter-row input:focus, .filter-row select:focus{outline:none;border-color:var(--sky-deep);}
+
+  /* ---------- Add form ---------- */
+  .add-form{background:var(--white);border:1px solid var(--line);border-radius:5px;padding:32px;max-width:560px;}
+  .form-row{margin-bottom:18px;}
+  .form-row label{display:block;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sky-deep);margin-bottom:7px;font-weight:500;}
+  .form-row input, .form-row select, .form-row textarea{
+    width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:3px;font-family:'Jost',sans-serif;font-size:.92rem;
+  }
+  .form-row textarea{resize:vertical;min-height:70px;}
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus{outline:none;border-color:var(--sky-deep);}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .add-submit{
+    background:var(--espresso);color:var(--ivory);border:none;padding:14px 30px;border-radius:3px;
+    font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;cursor:pointer;transition:background .3s ease;
+  }
+  .add-submit:hover{background:var(--sky-deep);}
+  .toast{
+    position:fixed;bottom:24px;right:24px;background:var(--espresso);color:var(--ivory);padding:14px 22px;border-radius:4px;
+    font-size:.85rem;box-shadow:0 20px 40px -14px rgba(0,0,0,.4);opacity:0;transform:translateY(12px);
+    transition:opacity .35s ease, transform .35s ease;pointer-events:none;z-index:200;
+  }
+  .toast.show{opacity:1;transform:translateY(0);}
+  @media (max-width:520px){.two-col{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
+  <div class="login-card" id="loginCard">
+    <div class="mark">Adhara</div>
+    <div class="sub">Panneau Administrateur</div>
+    <input type="password" id="loginPass" placeholder="Mot de passe" autocomplete="current-password">
+    <button id="loginBtn">Se connecter</button>
+    <p class="login-error" id="loginError">Mot de passe incorrect. Réessayez.</p>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app">
+  <header class="topbar">
+    <div class="mark">Adhara<span>Panneau Réservations</span></div>
+    <button class="logout-btn" id="logoutBtn">Déconnexion</button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="dashboard">Tableau de bord</button>
+    <button class="tab-btn" data-tab="all">Toutes <span class="count" id="countAll">0</span></button>
+    <button class="tab-btn" data-tab="addform">Ajouter</button>
+  </nav>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section class="tab-panel active" id="tab-dashboard">
+      <div class="panel-head"><h2>Tableau de bord</h2></div>
+      <div class="dash-cols">
+        <div class="dash-col">
+          <h3><span class="dot new"></span>Nouvelles <span class="count" id="countNew">0</span></h3>
+          <div id="listNew"></div>
+        </div>
+        <div class="dash-col">
+          <h3><span class="dot confirmed"></span>Confirmées <span class="count" id="countConfirmed">0</span></h3>
+          <div id="listConfirmed"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ALL -->
+    <section class="tab-panel" id="tab-all">
+      <div class="panel-head"><h2>Toutes les réservations</h2></div>
+      <div class="filter-row">
+        <input type="text" id="searchInput" placeholder="Rechercher par nom ou téléphone...">
+        <select id="statusFilter">
+          <option value="">Tous les statuts</option>
+          <option value="new">Nouvelle</option>
+          <option value="confirmed">Confirmée</option>
+          <option value="done">Terminée</option>
+          <option value="cancelled">Annulée</option>
+        </select>
+      </div>
+      <div id="listAll"></div>
+    </section>
+
+    <!-- ADD -->
+    <section class="tab-panel" id="tab-addform">
+      <div class="panel-head"><h2>Ajouter une réservation</h2></div>
+      <form class="add-form" id="addForm">
+        <div class="form-row">
+          <label for="a-name">Nom complet</label>
+          <input type="text" id="a-name" required>
+        </div>
+        <div class="form-row">
+          <label for="a-phone">Téléphone</label>
+          <input type="tel" id="a-phone" placeholder="0540330105" required>
+        </div>
+        <div class="form-row">
+          <label for="a-service">Service</label>
+          <select id="a-service" required>
+            <option value="">Choisir un service</option>
+            <option value="Coloration / Décoloration">Coloration / Décoloration</option>
+            <option value="Soin capillaire">Soin capillaire</option>
+            <option value="Maquillage et coiffure">Maquillage et coiffure</option>
+          </select>
+        </div>
+        <div class="two-col">
+          <div class="form-row">
+            <label for="a-date">Date</label>
+            <input type="date" id="a-date" required>
+          </div>
+          <div class="form-row">
+            <label for="a-time">Heure</label>
+            <input type="time" id="a-time" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="a-note">Note (optionnel)</label>
+          <textarea id="a-note" placeholder="Précisions sur la demande..."></textarea>
+        </div>
+        <button type="submit" class="add-submit">Ajouter la réservation</button>
+      </form>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDwRB5RlT-Ano0WWKuy2erQ1A_zi17FxLQ",
+    authDomain: "adhara-beauty-studio.firebaseapp.com",
+    databaseURL: "https://adhara-beauty-studio-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "adhara-beauty-studio",
+    storageBucket: "adhara-beauty-studio.firebasestorage.app",
+    messagingSenderId: "898416109042",
+    appId: "1:898416109042:web:570ddd754c567177fb776b"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  const BOOKINGS_PATH = "adhara-beauty-studio/bookings/";
+</script>
+
+<script>
+  /* =========================================================
+     NOTE SÉCURITÉ : ce mot de passe est vérifié côté client,
+     donc visible dans le code source. Pour une vraie protection,
+     il faudra migrer vers Firebase Authentication.
+     ========================================================= */
+  const ADMIN_PASSWORD = "Adhara2026";
+
+  const loginScreen = document.getElementById('loginScreen');
+  const loginCard = document.getElementById('loginCard');
+  const loginPass = document.getElementById('loginPass');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginError = document.getElementById('loginError');
+  const app = document.getElementById('app');
+
+  function tryLogin() {
+    if (loginPass.value === ADMIN_PASSWORD) {
+      sessionStorage.setItem('adhara_admin_ok', '1');
+      showApp();
+    } else {
+      loginError.style.display = 'block';
+      loginCard.classList.remove('shake');
+      void loginCard.offsetWidth;
+      loginCard.classList.add('shake');
+      loginPass.value = '';
+    }
+  }
+  loginBtn.addEventListener('click', tryLogin);
+  loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+
+  function showApp() {
+    loginScreen.style.display = 'none';
+    app.style.display = 'block';
+    initListener();
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem('adhara_admin_ok');
+    location.reload();
+  });
+
+  if (sessionStorage.getItem('adhara_admin_ok') === '1') showApp();
+
+  /* ---- tabs ---- */
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  /* ---- toast ---- */
+  const toastEl = document.getElementById('toast');
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 2600);
+  }
+
+  /* ---- icons ---- */
+  const ICONS = {
+    phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.69 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.33 1.85.56 2.81.69A2 2 0 0 1 22 16.92z"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>',
+    flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22V4l16 6-16 6"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>',
+    wa: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.2h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2z"/></svg>',
+    empty: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4"/></svg>'
+  };
+
+  const STATUS_LABEL = { new: 'Nouvelle', confirmed: 'Confirmée', done: 'Terminée', cancelled: 'Annulée' };
+  const SOURCE_LABEL = { website: 'Web', manual: 'Manuel' };
+
+  let allBookings = {};
+
+  function initListener() {
+    db.ref(BOOKINGS_PATH).on('value', snap => {
+      allBookings = snap.val() || {};
+      render();
+    });
+  }
+
+  function bookingArray() {
+    return Object.entries(allBookings)
+      .map(([key, b]) => ({ ...b, _key: key }))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }
+
+  function waLink(b) {
+    const text = encodeURIComponent(`Bonjour ${b.name}, ici Adhara Beauty Studio. Concernant votre rendez-vous du ${b.date || ''} à ${b.time || ''} pour "${b.service || ''}"...`);
+    const phone = (b.phone || '').replace(/[^0-9+]/g, '').replace(/^0/, '213');
+    return `https://wa.me/${phone}?text=${text}`;
+  }
+
+  function cardHTML(b) {
+    const status = b.status || 'new';
+    const source = b.source || 'manual';
+    return `
+    <div class="card" data-key="${b._key}">
+      <div class="card-top">
+        <div>
+          <div class="card-name">${escapeHTML(b.name || 'Sans nom')}</div>
+          <div class="card-service">${escapeHTML(b.service || '—')}</div>
+        </div>
+        <div class="badges">
+          <span class="badge ${status}">${STATUS_LABEL[status] || status}</span>
+          <span class="badge ${source}">${SOURCE_LABEL[source] || source}</span>
+        </div>
+      </div>
+      <div class="card-meta">
+        <span>${ICONS.phone} <a href="tel:${escapeHTML(b.phone||'')}">${escapeHTML(b.phone || '—')}</a></span>
+        <span>${ICONS.calendar} ${escapeHTML(b.date || '—')}</span>
+        <span>${ICONS.clock} ${escapeHTML(b.time || '—')}</span>
+        ${b.createdAt ? `<span>Reçue le ${new Date(b.createdAt).toLocaleDateString('fr-FR')}</span>` : ''}
+      </div>
+      ${b.note ? `<div class="card-note">${escapeHTML(b.note)}</div>` : ''}
+      <div class="card-actions">
+        ${status !== 'confirmed' && status !== 'done' ? `<button class="act act-confirm" data-action="confirmed">${ICONS.check} Confirmer</button>` : ''}
+        ${status !== 'done' ? `<button class="act act-done" data-action="done">${ICONS.flag} Terminé</button>` : ''}
+        ${status !== 'cancelled' ? `<button class="act act-cancel" data-action="cancelled">${ICONS.x} Annuler</button>` : ''}
+        <a class="act act-call" href="tel:${escapeHTML(b.phone||'')}">${ICONS.phone} Appeler</a>
+        <a class="act act-wa" href="${waLink(b)}" target="_blank" rel="noopener">${ICONS.wa} WhatsApp</a>
+        <button class="act act-delete" data-action="delete">${ICONS.trash} Supprimer</button>
+      </div>
+    </div>`;
+  }
+
+  function escapeHTML(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  function emptyState(msg) {
+    return `<div class="empty-state">${ICONS.empty}<p>${msg}</p></div>`;
+  }
+
+  function attachCardEvents(container) {
+    container.querySelectorAll('.act[data-action]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.closest('.card').dataset.key;
+        const action = btn.dataset.action;
+        if (action === 'delete') {
+          if (confirm('Supprimer définitivement cette réservation ?')) {
+            db.ref(BOOKINGS_PATH + key).remove().then(() => toast('Réservation supprimée.'));
+          }
+        } else {
+          db.ref(BOOKINGS_PATH + key).update({ status: action }).then(() => toast('Statut mis à jour.'));
+        }
+      });
+    });
+  }
+
+  function render() {
+    const arr = bookingArray();
+
+    // dashboard
+    const newList = arr.filter(b => (b.status || 'new') === 'new');
+    const confirmedList = arr.filter(b => b.status === 'confirmed');
+    document.getElementById('countNew').textContent = newList.length;
+    document.getElementById('countConfirmed').textContent = confirmedList.length;
+    document.getElementById('countAll').textContent = arr.length;
+
+    const listNewEl = document.getElementById('listNew');
+    listNewEl.innerHTML = newList.length ? newList.map(cardHTML).join('') : emptyState('Aucune nouvelle réservation.');
+    attachCardEvents(listNewEl);
+
+    const listConfirmedEl = document.getElementById('listConfirmed');
+    listConfirmedEl.innerHTML = confirmedList.length ? confirmedList.map(cardHTML).join('') : emptyState('Aucune réservation confirmée.');
+    attachCardEvents(listConfirmedEl);
+
+    renderAllTab();
+  }
+
+  function renderAllTab() {
+    const search = document.getElementById('searchInput').value.trim().toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    let arr = bookingArray();
+
+    if (search) {
+      arr = arr.filter(b =>
+        (b.name || '').toLowerCase().includes(search) ||
+        (b.phone || '').toLowerCase().includes(search)
+      );
+    }
+    if (statusFilter) {
+      arr = arr.filter(b => (b.status || 'new') === statusFilter);
+    }
+
+    const listAllEl = document.getElementById('listAll');
+    listAllEl.innerHTML = arr.length ? arr.map(cardHTML).join('') : emptyState('Aucune réservation ne correspond à votre recherche.');
+    attachCardEvents(listAllEl);
+  }
+
+  document.getElementById('searchInput').addEventListener('input', renderAllTab);
+  document.getElementById('statusFilter').addEventListener('change', renderAllTab);
+
+  /* ---- add form ---- */
+  document.getElementById('addForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const name = document.getElementById('a-name').value.trim();
+    const phone = document.getElementById('a-phone').value.trim();
+    const service = document.getElementById('a-service').value;
+    const date = document.getElementById('a-date').value;
+    const time = document.getElementById('a-time').value;
+    const note = document.getElementById('a-note').value.trim();
+
+    if (!name || !phone || !service || !date || !time) {
+      toast('Merci de remplir tous les champs obligatoires.');
+      return;
+    }
+
+    const newRef = db.ref(BOOKINGS_PATH).push();
+    const payload = {
+      id: newRef.key,
+      name, phone, service, date, time,
+      appointment: `${date} à ${time}`,
+      note: note || null,
+      status: 'new',
+      source: 'manual',
+      createdAt: Date.now()
+    };
+    newRef.set(payload).then(() => {
+      toast('Réservation ajoutée avec succès.');
+      this.reset();
+      document.querySelector('.tab-btn[data-tab="dashboard"]').click();
+    });
+  });
+</script>
+
+</body>
+</html>
